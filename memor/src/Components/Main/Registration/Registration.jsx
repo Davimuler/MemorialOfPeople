@@ -1,10 +1,54 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { TextField, Button, Container, Typography, Box } from '@mui/material';
 
 const Registration = () => {
+    const [formData, setFormData] = useState({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phoneNumber: '',
+        password: '',
+        confirmPassword: ''
+    });
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData((prevData) => ({
+            ...prevData,
+            [name]: value
+        }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        if (formData.password !== formData.confirmPassword) {
+            alert("Паролі не збігаються!");
+            return;
+        }
+
+        try {
+            const response = await fetch('http://localhost:5000/api/auth/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+
+            if (response.ok) {
+                alert("Реєстрація успішна!");
+            } else {
+                alert("Сталася помилка при реєстрації");
+            }
+        } catch (error) {
+            console.error('Помилка при відправці даних:', error);
+            alert("Не вдалося зв'язатися з сервером.");
+        }
+    };
+
     return (
         <Container maxWidth="xs">
-
             <Box
                 sx={{
                     display: 'flex',
@@ -16,16 +60,19 @@ const Registration = () => {
                     boxShadow: 3
                 }}
             >
-
                 <Typography variant="h5" align="center" gutterBottom>
-                    Регистрация
+                    Реєстрація
                 </Typography>
-                {['Имя', 'Фамилия', 'Email', 'Номер телефона,','Введіть пароль','Підтвердіть пароль'].map((label, index) => (
+                {["Ім'я", 'Прізвище', 'Email', 'Номер телефона', 'Введіть пароль', 'Підтвердіть пароль'].map((label, index) => (
                     <TextField
                         key={index}
                         label={label}
                         variant="standard"
                         fullWidth
+                        name={label.toLowerCase().replace(/\s/g, '')} // Преобразуем метку в имя
+                        value={formData[label.toLowerCase().replace(/\s/g, '')]}
+                        onChange={handleChange}
+                        type={label.includes('пароль') ? 'password' : 'text'}
                         InputProps={{
                             sx: {
                                 '&:before': {
@@ -46,6 +93,7 @@ const Registration = () => {
                     />
                 ))}
                 <Button
+                    onClick={handleSubmit}
                     sx={{
                         backgroundColor: '#1E90FF',
                         color: '#fff',
@@ -57,7 +105,7 @@ const Registration = () => {
                     }}
                     fullWidth
                 >
-                    Зарегистрироваться
+                    Зареєструватися
                 </Button>
                 <Typography
                     sx={{
