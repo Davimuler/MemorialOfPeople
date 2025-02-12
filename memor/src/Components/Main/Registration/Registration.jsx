@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { TextField, Button, Container, Typography, Box } from '@mui/material';
+import axios from "axios";  // импортируем axios для отправки запроса
 
 const Registration = () => {
     const [formData, setFormData] = useState({
@@ -11,39 +12,61 @@ const Registration = () => {
         confirmPassword: ''
     });
 
+    const [error, setError] = useState('');  // Стейт для ошибок
+    const [passwordError, setPasswordError] = useState('');  // Стейт для ошибки пароля
+    const [successMessage, setSuccessMessage] = useState('');
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prevData) => ({
             ...prevData,
             [name]: value
         }));
+
+        // Проверка на совпадение паролей сразу при вводе
+        if (name === 'confirmPassword') {
+            if (value !== formData.password) {
+                setPasswordError("Паролі не збігаються!");
+            } else {
+                setPasswordError('');
+            }
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        // Если пароли не совпадают, не отправляем данные
         if (formData.password !== formData.confirmPassword) {
-            alert("Паролі не збігаються!");
+            setPasswordError("Паролі не збігаються!");
             return;
         }
 
-        try {
-            const response = await fetch('http://localhost:5000/api/auth/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData),
-            });
+        const dataToSend = {
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            phoneNumber: formData.phoneNumber,
+            password: formData.password,
+            confirmPassword: formData.confirmPassword
+        };
 
-            if (response.ok) {
-                alert("Реєстрація успішна!");
+        try {
+            const response = await axios.post('http://localhost:5000/api/auth/register', dataToSend);
+
+            if (response.status === 201) {
+                setSuccessMessage("Реєстрація успішна!");
             } else {
                 alert("Сталася помилка при реєстрації");
             }
         } catch (error) {
             console.error('Помилка при відправці даних:', error);
-            alert("Не вдалося зв'язатися з сервером.");
+
+            if (error.response && error.response.status === 400) {
+                setError("Користувач з таким email вже існує");
+            } else {
+                setError("Не вдалося зв'язатися з сервером.");
+            }
         }
     };
 
@@ -63,14 +86,26 @@ const Registration = () => {
                 <Typography variant="h5" align="center" gutterBottom>
                     Реєстрація
                 </Typography>
-                {["Ім'я", 'Прізвище', 'Email', 'Номер телефона', 'Введіть пароль', 'Підтвердіть пароль'].map((label, index) => (
+                {/* Отображаем ошибку, если она есть */}
+                {error && <Typography sx={{ color: 'red', textAlign: 'center' }}>{error}</Typography>}
+                {passwordError && <Typography sx={{ color: 'red', textAlign: 'center' }}>{passwordError}</Typography>}
+                {successMessage && <Typography sx={{ color: 'green', textAlign: 'center' }}>{successMessage}</Typography>}
+
+                {[
+                    { label: "Ім'я", name: 'firstName' },
+                    { label: 'Прізвище', name: 'lastName' },
+                    { label: 'Email', name: 'email' },
+                    { label: 'Номер телефона', name: 'phoneNumber' },
+                    { label: 'Введіть пароль', name: 'password' },
+                    { label: 'Підтвердіть пароль', name: 'confirmPassword' }
+                ].map(({ label, name }, index) => (
                     <TextField
                         key={index}
                         label={label}
                         variant="standard"
                         fullWidth
-                        name={label.toLowerCase().replace(/\s/g, '')} // Преобразуем метку в имя
-                        value={formData[label.toLowerCase().replace(/\s/g, '')]}
+                        name={name}
+                        value={formData[name]}
                         onChange={handleChange}
                         type={label.includes('пароль') ? 'password' : 'text'}
                         InputProps={{
@@ -93,6 +128,7 @@ const Registration = () => {
                     />
                 ))}
                 <Button
+                    disabled={passwordError || formData.password !== formData.confirmPassword}
                     onClick={handleSubmit}
                     sx={{
                         backgroundColor: '#1E90FF',

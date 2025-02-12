@@ -22,7 +22,7 @@ function App() {
             <Box sx={{ display: 'flex', flexDirection: 'column'}}>
                 <Header />
                 <Main  />
-                <Footer />
+                {/*<Footer />*/}
             </Box>
         </ThemeProvider>
     );
