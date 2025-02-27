@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { TextField, Button, Container, Typography, Box } from '@mui/material';
-import axios from "axios";  // импортируем axios для отправки запроса
+import axios from 'axios';
+import { Context } from "../../../index";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import GoogleIcon from '@mui/icons-material/Google';
 
 const Registration = () => {
     const [formData, setFormData] = useState({
@@ -12,9 +15,37 @@ const Registration = () => {
         confirmPassword: ''
     });
 
-    const [error, setError] = useState('');  // Стейт для ошибок
-    const [passwordError, setPasswordError] = useState('');  // Стейт для ошибки пароля
+    const [error, setError] = useState('');
+    const [passwordError, setPasswordError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
+
+    const { auth } = useContext(Context);
+
+    const RegWithGoogle = async () => {
+        const provider = new GoogleAuthProvider();
+        try {
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+            console.log(user);
+
+            const response = await axios.post('http://localhost:5000/api/auth/google', {
+                accessToken: user.accessToken,
+                email: user.email,
+                displayName: user.displayName,
+                photoURL: user.photoURL,
+            });
+
+            if (response.data.success) {
+                setSuccessMessage('Реєстрація через Google успішна!');
+                setError('');
+            } else {
+                setError('Помилка реєстрації через Google');
+            }
+        } catch (err) {
+            console.error("Помилка реєстрації через Google:", err);
+            setError('Помилка реєстрації через Google');
+        }
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -23,7 +54,6 @@ const Registration = () => {
             [name]: value
         }));
 
-        // Проверка на совпадение паролей сразу при вводе
         if (name === 'confirmPassword') {
             if (value !== formData.password) {
                 setPasswordError("Паролі не збігаються!");
@@ -36,7 +66,6 @@ const Registration = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Если пароли не совпадают, не отправляем данные
         if (formData.password !== formData.confirmPassword) {
             setPasswordError("Паролі не збігаються!");
             return;
@@ -56,8 +85,10 @@ const Registration = () => {
 
             if (response.status === 201) {
                 setSuccessMessage("Реєстрація успішна!");
+                setError('');
             } else {
-                alert("Сталася помилка при реєстрації");
+                setError("Сталася помилка при реєстрації");
+                setSuccessMessage('');
             }
         } catch (error) {
             console.error('Помилка при відправці даних:', error);
@@ -67,6 +98,7 @@ const Registration = () => {
             } else {
                 setError("Не вдалося зв'язатися з сервером.");
             }
+            setSuccessMessage('');
         }
     };
 
@@ -86,7 +118,6 @@ const Registration = () => {
                 <Typography variant="h5" align="center" gutterBottom>
                     Реєстрація
                 </Typography>
-                {/* Отображаем ошибку, если она есть */}
                 {error && <Typography sx={{ color: 'red', textAlign: 'center' }}>{error}</Typography>}
                 {passwordError && <Typography sx={{ color: 'red', textAlign: 'center' }}>{passwordError}</Typography>}
                 {successMessage && <Typography sx={{ color: 'green', textAlign: 'center' }}>{successMessage}</Typography>}
@@ -143,6 +174,26 @@ const Registration = () => {
                 >
                     Зареєструватися
                 </Button>
+                <Box sx={{ display: 'flex', justifyContent: 'center', marginTop: 2 }}>
+                    <Button
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            border: '2px solid #1E90FF',
+                            backgroundColor: 'transparent',
+                            color: '#1E90FF',
+                            borderRadius: '10px',
+                            '&:hover': {
+                                backgroundColor: 'rgba(30, 144, 255, 0.1)',
+                            },
+                        }}
+                        onClick={RegWithGoogle}
+                    >
+                        <GoogleIcon />
+                        <Typography variant="body1">Реєстрація через Google</Typography>
+                    </Button>
+                </Box>
                 <Typography
                     sx={{
                         marginTop: 2,

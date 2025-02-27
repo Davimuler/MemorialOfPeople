@@ -6,15 +6,15 @@ import { QRCodeSVG } from 'qrcode.react';
 function Page() {
     const profile = {
         mainPhoto: "https://img.freepik.com/premium-photo/caucasian-man-with-blonde-hair-sitting-floor-studio-posing-blue-wall_129180-1029.jpg",
-        quote: "Этот человек оставил след в наших сердцах...",
+        quote: "Ця людина залишила слід у наших серцях...",
         gallery: [
             "https://img.freepik.com/free-photo/expressive-redhead-bearded-man_176420-32277.jpg",
             "https://img.freepik.com/free-photo/handsome-young-cheerful-man-with-arms-crossed_171337-1073.jpg",
             "https://img.freepik.com/free-photo/smiley-man-with-arms-crossed-posing_23-2148306586.jpg?semt=ais_hybrid",
             "https://img.freepik.com/premium-photo/caucasian-man-with-blonde-hair-sitting-floor-studio-posing-blue-wall_129180-1029.jpg",
         ],
-        name: "Иван Петрович Иванов",
-        description: "Человек с добрым сердцем, который всегда помогал другим. Его мудрость и доброта навсегда останутся в памяти близких..."
+        name: "Іван Петрович Іванов",
+        description: "Людина з добрим серцем, яка завжди допомагала іншим. Його мудрість і доброта назавжди залишаться у пам'яті близьких..."
     };
 
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -39,7 +39,7 @@ function Page() {
                 component="img"
                 height="400"
                 image={profile.mainPhoto}
-                alt="Главное фото"
+                alt="Головне фото"
             />
 
             <Typography variant="h4" sx={{ fontWeight: "bold", mt: 2 }}>
@@ -103,7 +103,7 @@ function Page() {
             <Box sx={{ mt: 4, mb: 2 }}>
                 <Typography
                     variant="h4" sx={{ fontWeight: "bold", mt: 2 }}>
-                    Это код для этой страницы
+                    Це код для цієї сторінки
                 </Typography>
             </Box>
 

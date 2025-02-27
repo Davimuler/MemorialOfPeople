@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useContext, useState } from 'react';
 import { TextField, Button, Container, Typography, Box } from '@mui/material';
 import axios from 'axios';
+import { Context } from "../../../index";
+import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import GoogleIcon from '@mui/icons-material/Google';
-import { GoogleLogin } from '@react-oauth/google';
+import { useDispatch } from 'react-redux'; // Импортируем useDispatch
+import { login } from '../../../redux/authSlice'; // Импортируем действие login из authSlice
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -10,6 +13,50 @@ const Login = () => {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
+    const { auth } = useContext(Context); // Получаем auth из контекста
+    const dispatch = useDispatch(); // Получаем dispatch из Redux
+
+    const fetchUserData = async (email) => {
+        try {
+            const response = await axios.post('http://localhost:5000/api/auth/getuser', {
+                email: email,
+            });
+            // console.log(response.data.user)
+            return response.data.user; // Предполагаем, что сервер возвращает данные пользователя
+        } catch (err) {
+            console.error("Помилка отримання даних користувача:", err);
+            throw err;
+        }
+    };
+
+
+    // Функция для входа через Google
+    const loginWithGoogle = async () => {
+        const provider = new GoogleAuthProvider();
+        try {
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+            setSuccess('Вхід через Google успішний!');
+            setError('');
+
+            // Запрашиваем данные пользователя с сервера
+            const userData = await fetchUserData(user.email);
+ console.log(userData)
+            dispatch(login({
+                _id:userData._id,
+                uid: userData.uid,
+                email: userData.email,
+                displayName: userData.displayName,
+                photoURL: userData.photoURL,
+                referralCode: userData.referralCode,
+            }));
+        } catch (err) {
+            console.error("Помилка входу через Google:", err);
+            setError('Помилка авторизації через Google');
+        }
+    };
+
+    // Функция для обычного входа
     const handleSubmit = async (event) => {
         event.preventDefault();
         try {
@@ -18,40 +65,24 @@ const Login = () => {
                 password
             });
 
-            // Handle successful login
+            // Обработка успешного входа
             console.log(response.data);
             setSuccess('Вхід успішний!');
-            setError(''); // Clear error message if login is successful
-        } catch (err) {
-            // Handle error
-            setError('Невірні дані для входу');
-            setSuccess(''); // Clear success message if login fails
-        }
-    };
-
-    const handleGoogleLogin = async (credentialResponse) => {
-        try {
-            const { credential } = credentialResponse;
-
-            // Логируем токен, чтобы убедиться, что он приходит правильно
-            console.log("Google Token ID:", credential);
-
-            // const response = await axios.post('http://localhost:5000/api/auth/google', {
-            //     tokenId: credential
-            // });
-
-            // console.log("Server Response:", response.data);
-            setSuccess('Вхід через Google успішний!');
             setError('');
+
+            // Сохраняем данные пользователя в Redux и localStorage
+            dispatch(login({
+                uid: response.data.user.id, // Предположим, что сервер возвращает ID пользователя
+                email: response.data.user.email,
+                displayName: response.data.user.name, // Предположим, что сервер возвращает имя
+                photoURL: response.data.user.avatar, // Предположим, что сервер возвращает аватар
+            }));
         } catch (err) {
-            console.error("Google Login Error:", err);
-            if (err.response) {
-                console.error("Server Response Error:", err.response.data);
-            }
-            setError('Помилка авторизації через Google');
+            // Обработка ошибки
+            setError('Невірні дані для входу');
+            setSuccess('');
         }
     };
-
 
     return (
         <Container maxWidth="xs">
@@ -118,6 +149,7 @@ const Login = () => {
                 >
                     Забули пароль?
                 </Typography>
+                {/* Кнопка для обычного входа */}
                 <Button
                     sx={{
                         backgroundColor: '#1E90FF',
@@ -133,39 +165,27 @@ const Login = () => {
                 >
                     Увійти
                 </Button>
-
-                {/* Кастомная кнопка для Google входа */}
-                {/*<GoogleLogin*/}
-                {/*    onSuccess={handleGoogleLogin}*/}
-                {/*    onError={() => setError('Помилка авторизації через Google')}*/}
-                {/*    useOneTap*/}
-                {/*    shape="rectangular"*/}
-                {/*    render={(renderProps) => (*/}
-                {/*        <Button*/}
-                {/*            sx={{*/}
-                {/*                backgroundColor: 'transparent',*/}
-                {/*                color: '#1E90FF',*/}
-                {/*                borderRadius: '10px',*/}
-                {/*                padding: '8px 16px',*/}
-                {/*                display: 'flex',*/}
-                {/*                alignItems: 'center',*/}
-                {/*                justifyContent: 'center',*/}
-                {/*                width: '100%',*/}
-                {/*                border: '2px solid #1E90FF',*/}
-                {/*                '&:hover': {*/}
-                {/*                    backgroundColor: 'rgba(30, 144, 255, 0.1)',*/}
-                {/*                    borderColor: '#1E90FF',*/}
-                {/*                },*/}
-                {/*            }}*/}
-                {/*            onClick={renderProps.onClick}*/}
-                {/*            disabled={renderProps.disabled}*/}
-                {/*        >*/}
-                {/*            <GoogleIcon sx={{ fontSize: '24px', marginRight: '8px' }} />*/}
-                {/*            Вхід через Google*/}
-                {/*        </Button>*/}
-                {/*    )}*/}
-                {/*/>*/}
-
+                {/* Иконка для входа через Google */}
+                <Box sx={{ display: 'flex', justifyContent: 'center', marginTop: 2 }}>
+                    <Button
+                        sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 1,
+                            border: '2px solid #1E90FF',
+                            backgroundColor: 'transparent',
+                            color: '#1E90FF',
+                            borderRadius: '10px',
+                            '&:hover': {
+                                backgroundColor: 'rgba(30, 144, 255, 0.1)',
+                            },
+                        }}
+                        onClick={loginWithGoogle}
+                    >
+                        <GoogleIcon />
+                        <Typography variant="body1">Вхід через Google</Typography>
+                    </Button>
+                </Box>
                 <Typography
                     sx={{
                         marginTop: 2,
